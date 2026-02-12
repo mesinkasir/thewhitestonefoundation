@@ -2,10 +2,10 @@ title: "The Whitestone Foundation"
 description: "Whitestone Publications and programs in critical theory, public scholarship, and higher education."
 url: "http://localhost:8080"
 contact: "whitestone.pubs@gmail.com"
-image: "/images/whitestone-logo.png"
+image: "/images/whitestonelogo.webp"
 language: "en"
 locale: en_US
-favicon: "/images/whitestone-logo.png"
+favicon: "/images/whitestonelogo.webp"
 
 formspree_id: "your-form-id"
 
@@ -17,7 +17,7 @@ metasocial:
 
 sidebar:
   title: "The Whitestone Foundation"
-  logo: "/images/whitestone-logo.png"
+  logo: "/images/whitestonelogo.webp"
   list:
     - label: "Home"
       url: "/"
