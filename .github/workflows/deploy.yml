@@ -1,5 +1,4 @@
 name: Deploy Eleventy to XMIT
-
 on:
   push:
     branches: ["main", "master"]
@@ -8,76 +7,41 @@ on:
   workflow_dispatch:
     inputs:
       site:
-        description: "XMIT thewhitestonefoundation.xmit.dev"
+        description: "XMIT Target Site"
         required: true
         default: "thewhitestonefoundation.xmit.dev@268"
         type: string
-
 concurrency:
   group: deploy-xmit-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: write
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
       XMIT_SITE: thewhitestonefoundation.xmit.dev@268
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Ambil history penuh untuk keperluan git push
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Ingest Metasearch from All Sites
-        run: node scripts/merge-metasearch.js
-
-      - name: Commit Updated Metadata
+      - run: npm install
+      - run: node scripts/merge-metasearch.js
+      - name: Git Push Metadata
         run: |
-          git config --global user.name "GitHub Action Bot"
+          git config --global user.name "GitHub Action"
           git config --global user.email "actions@github.com"
-          git add content/page-setup/global-metasearch.json || echo "No file to add"
-          git commit -m "chore: automated daily metasearch ingest [skip ci]" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-      - name: Build Eleventy site
-        run: npm run build
-
-      - name: Verify build output
-        run: |
-          if [ ! -d _site ]; then
-            echo "_site directory missing after build" >&2
-            exit 1
-          fi
-          ls -1 _site | head -n 20
-
-      - name: Deploy to XMIT (CLI)
+          git add content/page-setup/global-metasearch.json || exit 0
+          git commit -m "chore: update metasearch [skip ci]" || exit 0
+          git push
+      - run: npm run build
+      - name: XMIT Deploy
         env:
           XMIT_KEY: ${{ secrets.XMIT_KEY }}
         run: |
-          if [ -z "$XMIT_KEY" ]; then
-            echo "XMIT_KEY secret is not set" >&2
-            exit 1
-          fi
-          SITE_INPUT="${{ github.event_name == 'workflow_dispatch' && inputs.site || '' }}"
-          if [ -n "$SITE_INPUT" ]; then
-            export XMIT_SITE="$SITE_INPUT"
-          fi
-          echo "Deploying _site to $XMIT_SITE via XMIT CLI";
-          npx -y @xmit.co/xmit "$XMIT_SITE" _site || { echo 'XMIT deploy failed' >&2; exit 1; }
-
-      - name: Post-deploy summary
-        run: |
-          echo "Deployment attempt finished for $XMIT_SITE";
-          echo "Visit: https://$XMIT_SITE";
+          SITE="${{ github.event_name == 'workflow_dispatch' && inputs.site || env.XMIT_SITE }}"
+          npx -y @xmit.co/xmit "$SITE" _site
