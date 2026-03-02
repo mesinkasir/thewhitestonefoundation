@@ -1,15 +1,11 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const fs = require('fs');
+const path = require('path');
 
 const SITES = [
-  "https://jcrt-dev.netlify.app/metadata/search.json",
-  "https://journal.thenewpolis.com/metadata/search.json",
-  "https://thenewpolis.com/metadata/search.json",
-  "https://esthesis.org/metadata/search.json"
+  "https://jcrt-dev.netlify.app/metasearch.json",
+  "https://journal.thenewpolis.com/metasearch.json",
+  "https://thenewpolis.com/metasearch.json",
+  "https://esthesis.org/metasearch.json"
 ];
 
 async function ingestMetadata() {
@@ -22,14 +18,9 @@ async function ingestMetadata() {
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
       
       const data = await response.json();
-      const entries = data.items || data.entries || [];
       
-      if (entries.length > 0) {
-        const enrichedEntries = entries.map(item => ({
-          ...item,
-          site: data.site || "External Source"
-        }));
-        globalData.push(...enrichedEntries); 
+      if (data && data.entries) {
+        globalData.push(...data.entries); 
       }
     } catch (err) {
       console.error(`❌ Error ingesting ${url}:`, err.message);
@@ -39,6 +30,7 @@ async function ingestMetadata() {
   globalData.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
   const outputPath = path.join(__dirname, '../content/page-setup/global-metasearch.json');
+  
   const dir = path.dirname(outputPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
